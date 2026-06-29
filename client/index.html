@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Compás</title>
+
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ffcc00">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Compás">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+</head>
+
+
+<body>
+
+
+<h1>
+Compás
+</h1>
+
+
+<!-- =====================
+     PANTALLA LOGIN
+===================== -->
+
+<div id="authPanel">
+
+  <div id="authTabs">
+
+    <button
+      id="tabLogin"
+      class="tab active"
+    >
+      Iniciar sesión
+    </button>
+
+    <button
+      id="tabRegister"
+      class="tab"
+    >
+      Registrarse
+    </button>
+
+  </div>
+
+  <div id="authForm">
+
+    <input
+      id="authUsername"
+      type="text"
+      placeholder="Username"
+      maxlength="20"
+    />
+
+    <input
+      id="authPassword"
+      type="password"
+      placeholder="Contraseña"
+    />
+
+    <button id="authSubmit">
+      Entrar
+    </button>
+
+    <div id="authError">
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =====================
+     PANTALLA JUEGO
+     (oculta hasta login)
+===================== -->
+
+<div id="gamePanel" style="display:none">
+
+  <div id="userBar">
+    <span id="userBarName"></span>
+    <span id="userBarTitle"></span>
+    <span id="userBarElo"></span>
+    <span id="userBarStreak"></span>
+    <button id="profileButton">👤 Perfil</button>
+    <button id="leaderboardButton">🏆 Ranking</button>
+    <button id="tournamentButton">🎮 Torneos</button>
+    <button id="spectatorButton">👁 Ver partidas</button>
+    <a href="editor.html" id="editorButton">🎹 Editor</a>
+    <button id="logoutButton">Salir</button>
+  </div>
+
+  <div id="lobbyInfo">
+    <div id="status">Conectando...</div>
+    <div id="room"></div>
+  </div>
+
+  <div id="matchInfo">
+    <div id="scoreBlock">
+      <span id="score">0</span>
+      <span id="scoreLabel">TÚ</span>
+    </div>
+    <div id="countdown">-</div>
+    <div id="scoreBlock">
+      <span id="opponent">0</span>
+      <span id="scoreLabel">RIVAL</span>
+    </div>
+  </div>
+
+  <div id="hpBar">
+    <div id="hpBarWrap">
+      <div id="hpFill"></div>
+    </div>
+    <div id="hpLabel">❤️ 100</div>
+  </div>
+
+  <div id="enemyHpBar" style="display:none">
+    <div id="enemyHpLabel">💀 100</div>
+    <div id="enemyHpBarWrap">
+      <div id="enemyHpFill"></div>
+    </div>
+  </div>
+
+  <div id="songSelector">
+  </div>
+
+  <div id="votePanel" style="display:none">
+    <div id="myVoteLabel">Tu voto: —</div>
+    <div id="rivalVoteStatus">👤 Rival eligiendo...</div>
+  </div>
+
+  <div id="songChosenScreen" style="display:none">
+    <div id="songChosenInner">
+      <div id="songChosenLabel">🎵 Se jugará</div>
+      <div id="songChosenName"></div>
+      <div id="songChosenStars"></div>
+      <div id="songChosenMeta"></div>
+      <div id="songChosenCountdown">2</div>
+    </div>
+  </div>
+
+  <div id="difficultyWrapper">
+    <label for="difficulty">🎯 Dificultad</label>
+    <select id="difficulty">
+
+      <option value="easy">
+        Easy
+      </option>
+
+      <option value="normal" selected>
+        Normal
+      </option>
+
+      <option value="hard">
+        Hard
+      </option>
+
+    </select>
+  </div>
+
+
+
+  <div id="abilitiesHud" style="display:none">
+
+    <div id="hudTopRow">
+      <div id="energyLabel">⚡ 0%</div>
+      <div id="pingIndicator">📶 --ms</div>
+    </div>
+
+    <div class="energy-bar-wrap">
+      <div id="energyBar"></div>
+    </div>
+
+    <div class="abilities-row">
+
+      <div id="abilityFlash" class="ability ability-locked">
+        <div class="ability-icon">💥</div>
+        <div class="ability-name">FLASH</div>
+        <div class="ability-key">Q</div>
+        <div class="ability-cost">50%</div>
+      </div>
+
+      <div id="abilityShake" class="ability ability-locked">
+        <div class="ability-icon">🌪️</div>
+        <div class="ability-name">SHAKE</div>
+        <div class="ability-key">E</div>
+        <div class="ability-cost">50%</div>
+      </div>
+
+      <div id="abilityReverse" class="ability ability-locked">
+        <div class="ability-icon">🔄</div>
+        <div class="ability-name">REVERSE</div>
+        <div class="ability-key">R</div>
+        <div class="ability-cost">50%</div>
+      </div>
+
+      <div id="abilitySpecial" class="ability ability-locked">
+        <div class="ability-icon">⚡</div>
+        <div class="ability-name">SPECIAL</div>
+        <div class="ability-key">SPACE</div>
+        <div class="ability-cost">100%</div>
+      </div>
+
+      <div id="abilityShield" class="ability ability-locked">
+        <div class="ability-icon">🛡️</div>
+        <div class="ability-name">SHIELD</div>
+        <div class="ability-key ability-label">SHIFT</div>
+        <div class="ability-cost">100%</div>
+      </div>
+
+    </div>
+
+  </div>
+
+    <div id="gameLayout">
+
+    <div id="gameColumn">
+
+      <div id="startButtons">
+        <button id="startButton">
+          🎵 JUGAR
+        </button>
+        <button id="practiceButton">
+          🎯 PRÁCTICA
+        </button>
+      </div>
+
+      <div id="comboDisplay"></div>
+
+      <div id="gameWrapper">
+        <div id="game">
+
+          <div id="laneIndicators">
+            <div class="lane-key">D</div>
+            <div class="lane-key">F</div>
+            <div class="lane-key">J</div>
+            <div class="lane-key">K</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div id="shieldStatus"></div>
+
+    <div id="resultPanel">
+
+      <div id="resultIcon"></div>
+
+      <h2 id="resultTitle">
+        Resultado
+      </h2>
+
+      <div id="resultStats">
+      </div>
+
+      <button id="rematchButton">
+        🔄 Jugar otra vez
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<!-- Botones táctiles para móvil (ocultos en desktop) -->
+<div id="touchButtons">
+  <button class="touch-btn" data-lane="d">D</button>
+  <button class="touch-btn" data-lane="f">F</button>
+  <button class="touch-btn" data-lane="j">J</button>
+  <button class="touch-btn" data-lane="k">K</button>
+</div>
+
+<script type="module" src="login.js"></script>
+
+<script type="module" src="profile.js"></script>
+
+<script type="module" src="clientUnlockables.js"></script>
+
+<script type="module" src="game.js"></script>
+
+<script type="module" src="spectator.js"></script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js")
+      .then(reg => console.log("SW registrado:", reg.scope))
+      .catch(err => console.warn("SW error:", err));
+  }
+
+  // Escalar el canvas de juego al ancho del dispositivo en móvil
+  function isMobileViewport() {
+    return Math.min(window.innerWidth, window.innerHeight) <= 640;
+  }
+
+  function scaleGameCanvas() {
+    const game = document.getElementById("game");
+    const wrapper = document.getElementById("gameWrapper");
+    if (!game || !wrapper) return;
+
+    if (isMobileViewport()) {
+      const isLandscape = window.innerWidth > window.innerHeight;
+      let scale;
+
+      if (isLandscape) {
+        scale = (window.innerHeight - 56 - 10) / 500;
+      } else {
+        const avail = wrapper.parentElement?.offsetWidth || window.innerWidth;
+        scale = avail / 400;
+      }
+
+      game.style.transform       = `scale(${scale})`;
+      game.style.transformOrigin = "top left";
+      wrapper.style.width        = `${400 * scale}px`;
+      wrapper.style.height       = `${500 * scale}px`;
+    } else {
+      game.style.transform       = "";
+      game.style.transformOrigin = "";
+      wrapper.style.width        = "";
+      wrapper.style.height       = "";
+    }
+  }
+
+  window.addEventListener("load", scaleGameCanvas);
+  window.addEventListener("resize", scaleGameCanvas);
+</script>
+
+
+<!-- =====================
+     PANTALLA PERFIL
+===================== -->
+
+<div id="profilePanel" style="display:none">
+
+  <div class="panel-header">
+    <h2>👤 Perfil</h2>
+    <button id="profileClose" class="close-btn">✕ Volver</button>
+  </div>
+
+  <div id="profileContent">
+  </div>
+
+  <div id="unlockablesContent">
+  </div>
+
+</div>
+
+
+<!-- =====================
+     PANTALLA LEADERBOARD
+===================== -->
+
+<div id="leaderboardPanel" style="display:none">
+
+  <div class="panel-header">
+    <h2>🏆 Ranking</h2>
+    <button id="leaderboardClose" class="close-btn">✕ Volver</button>
+  </div>
+
+  <div id="leaderboardContent">
+  </div>
+
+</div>
+
+
+<!-- =====================
+     PANTALLA ESPECTADOR
+===================== -->
+
+<div id="spectatorPanel" style="display:none">
+
+  <div class="panel-header">
+    <h2>👁 Ver partidas</h2>
+    <button id="spectatorClose" class="close-btn">✕ Volver</button>
+  </div>
+
+  <div id="spectatorContent">
+  </div>
+
+</div>
+
+
+</body>
+
+
+</html>

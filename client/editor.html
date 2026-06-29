@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Beatmap Editor — Compás</title>
+  <link rel="stylesheet" href="editor.css">
+</head>
+<body>
+
+<div id="editorApp">
+
+  <div id="editorHeader">
+    <h1>🎵 Beatmap Editor</h1>
+    <a href="index.html" id="backBtn">← Volver al juego</a>
+  </div>
+
+  <div id="editorConfig">
+    <div class="config-row">
+      <div class="config-group">
+        <label>Canción (MP3)</label>
+        <input type="file" id="audioFile" accept=".mp3,audio/*">
+      </div>
+      <div class="config-group">
+        <label>Nombre</label>
+        <input type="text" id="songName" placeholder="Mi canción" maxlength="30">
+      </div>
+      <div class="config-group">
+        <label>Artista</label>
+        <input type="text" id="songArtist" placeholder="Artista" maxlength="30">
+      </div>
+      <div class="config-group">
+        <label>Dificultad ★</label>
+        <select id="songStars">
+          <option value="1">★ (1)</option>
+          <option value="2">★★ (2)</option>
+          <option value="3" selected>★★★ (3)</option>
+          <option value="4">★★★★ (4)</option>
+          <option value="5">★★★★★ (5)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="transport">
+    <button id="btnPlay">▶️ Play</button>
+    <button id="btnPause" disabled>⏸️ Pause</button>
+    <button id="btnStop">⏹️ Stop</button>
+    <div id="timeDisplay">
+      <span id="currentTime">0:00.000</span>
+      <span id="totalTime">/ 0:00</span>
+    </div>
+    <div id="progressWrap">
+      <div id="progressBar">
+        <div id="progressFill"></div>
+        <div id="progressCursor"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="editorMain">
+
+    <div id="timeline">
+
+      <div id="timelineHeader">
+        <div class="lane-header" data-lane="d">D</div>
+        <div class="lane-header" data-lane="f">F</div>
+        <div class="lane-header" data-lane="j">J</div>
+        <div class="lane-header" data-lane="k">K</div>
+      </div>
+
+      <div id="timelineScroll">
+        <div id="timelineBody">
+          <div id="laneD" class="lane" data-lane="d"></div>
+          <div id="laneF" class="lane" data-lane="f"></div>
+          <div id="laneJ" class="lane" data-lane="j"></div>
+          <div id="laneK" class="lane" data-lane="k"></div>
+          <!-- Playhead se mueve dentro del contenido -->
+          <div id="playheadEl"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="editorPanel">
+      <div id="statsPanel">
+        <div class="stat">
+          <span class="stat-val" id="noteCount">0</span>
+          <span class="stat-lbl">notas</span>
+        </div>
+        <div class="stat">
+          <span class="stat-val" id="noteDensity">0</span>
+          <span class="stat-lbl">notas/seg</span>
+        </div>
+        <div class="stat">
+          <span class="stat-val" id="beatmapDuration">--</span>
+          <span class="stat-lbl">duración</span>
+        </div>
+      </div>
+
+      <div id="keyHints">
+        <h3>Controles</h3>
+        <div class="hint"><kbd>D</kbd><kbd>F</kbd><kbd>J</kbd><kbd>K</kbd>Pulsar / Mantener</div>
+        <div class="hint"><kbd>Z</kbd> Deshacer</div>
+        <div class="hint"><kbd>Space</kbd> Play / Pause</div>
+        <div class="hint"><kbd>←</kbd><kbd>→</kbd> ±500ms</div>
+        <div class="hint"><kbd>Del</kbd> Borrar nota cercana</div>
+      </div>
+
+      <div id="lastNotes">
+        <h3>Últimas notas</h3>
+        <div id="lastNotesList"></div>
+      </div>
+
+      <button id="btnUndo">↩️ Deshacer (Z)</button>
+      <button id="btnExport">🌍 Subir a comunidad</button>
+      <button id="btnClear">🗑️ Limpiar todo</button>
+    </div>
+
+  </div>
+
+  <div id="keyButtons">
+    <button class="key-btn" data-lane="d">D</button>
+    <button class="key-btn" data-lane="f">F</button>
+    <button class="key-btn" data-lane="j">J</button>
+    <button class="key-btn" data-lane="k">K</button>
+  </div>
+
+  <div id="editorFeedback"></div>
+
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script type="module" src="editor.js"></script>
+</body>
+</html>
