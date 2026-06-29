@@ -114,7 +114,7 @@ Feel free to open an issue or submit a pull request.
 
 ## 📸 Screenshots
 
-(Add screenshots here)
+<img width="814" height="617" alt="compas" src="https://github.com/user-attachments/assets/94185528-f8c0-433f-a77c-2dab992ca8ae" />
 
 
 ## 📜 License
