@@ -1,0 +1,13 @@
+{
+  "name": "compas",
+  "version": "1.0.0",
+  "description": "Compás — Juego de ritmo multijugador",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "build": "npm install --prefix server"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
