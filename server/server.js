@@ -52,12 +52,19 @@ app.use(cors());
 app.use(express.json());
 
 // Archivos estáticos del cliente
-const clientPath = path.join(__dirname, "../client");
+// Buscar el cliente relativo al directorio de trabajo o al script
+const clientPath = (() => {
+  const fromDirname = path.join(__dirname, "../client");
+  const fromCwd     = path.join(process.cwd(), "client");
+  const fs2         = require("fs");
+  if (fs2.existsSync(path.join(fromDirname, "index.html"))) return fromDirname;
+  if (fs2.existsSync(path.join(fromCwd,     "index.html"))) return fromCwd;
+  return fromDirname; // fallback
+})();
+
 console.log("📁 Sirviendo cliente desde:", clientPath);
 
-app.use(
-  express.static(clientPath)
-);
+app.use(express.static(clientPath));
 
 // Fallback — todas las rutas no-API sirven index.html
 app.get("*", (req, res) => {
