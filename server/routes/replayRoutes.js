@@ -1,94 +1,71 @@
-/*
-=================================
-REPLAY ROUTES
-POST /api/replays       — guardar replay
-GET  /api/replays/:id   — obtener replay por id
-GET  /api/replays/match/:matchId — replays de un match
-GET  /api/replays/me    — mis últimos replays
-=================================
-*/
-
-const express       = require("express");
-const router        = express.Router();
-const db            = require("../db/database");
+const express         = require("express");
+const router          = express.Router();
+const db              = require("../db/database");
 const { verifyToken } = require("../auth/auth");
 
-// ── Guardar replay ──────────────────────────
-router.post("/", verifyToken, (req, res) => {
+function auth(req, res, next) {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "No autorizado" });
+  const payload = verifyToken(token);
+  if (!payload) return res.status(401).json({ error: "Token inválido" });
+  req.user = payload;
+  next();
+}
 
+router.post("/", auth, async (req, res) => {
   const { match_id, song_id, difficulty, score, accuracy, data } = req.body;
-
-  if (!song_id || !difficulty || !data) {
-    return res.status(400).json({ error: "Faltan campos" });
-  }
+  if (!song_id || !difficulty || !data) return res.status(400).json({ error: "Faltan campos" });
 
   try {
-    const result = db.prepare(`
+    const result = await db.run(`
       INSERT INTO replays (match_id, player_id, song_id, difficulty, score, accuracy, data)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      match_id || null,
-      req.player.id,
-      song_id,
-      difficulty,
-      score || 0,
-      accuracy || 0,
-      JSON.stringify(data)
-    );
+    `, [match_id || null, req.user.id, song_id, difficulty, score || 0, accuracy || 0, JSON.stringify(data)]);
 
-    res.json({ id: result.lastInsertRowid });
-
+    res.json({ id: result.lastID });
   } catch (err) {
     console.error("Error guardando replay:", err);
     res.status(500).json({ error: "Error interno" });
   }
-
 });
 
-// ── Obtener replay por id ───────────────────
-router.get("/:id", (req, res) => {
+router.get("/:id", async (req, res) => {
+  try {
+    const replay = await db.get(`
+      SELECT r.*, p.username FROM replays r
+      JOIN players p ON p.id = r.player_id WHERE r.id = ?
+    `, [req.params.id]);
 
-  const replay = db.prepare(`
-    SELECT r.*, p.username
-    FROM replays r
-    JOIN players p ON p.id = r.player_id
-    WHERE r.id = ?
-  `).get(req.params.id);
-
-  if (!replay) return res.status(404).json({ error: "Replay no encontrado" });
-
-  replay.data = JSON.parse(replay.data);
-  res.json(replay);
-
+    if (!replay) return res.status(404).json({ error: "Replay no encontrado" });
+    replay.data = JSON.parse(replay.data);
+    res.json(replay);
+  } catch (err) {
+    res.status(500).json({ error: "Error cargando replay" });
+  }
 });
 
-// ── Mis últimos replays ─────────────────────
-router.get("/player/me", verifyToken, (req, res) => {
-
-  const replays = db.prepare(`
-    SELECT id, match_id, song_id, difficulty, score, accuracy, created_at
-    FROM replays
-    WHERE player_id = ?
-    ORDER BY created_at DESC
-    LIMIT 20
-  `).all(req.player.id);
-
-  res.json(replays);
-
+router.get("/player/me", auth, async (req, res) => {
+  try {
+    const replays = await db.all(`
+      SELECT id, match_id, song_id, difficulty, score, accuracy, created_at
+      FROM replays WHERE player_id = ? ORDER BY created_at DESC LIMIT 20
+    `, [req.user.id]);
+    res.json(replays);
+  } catch (err) {
+    res.status(500).json({ error: "Error cargando replays" });
+  }
 });
 
-// ── Replays de un match ─────────────────────
-router.get("/match/:matchId", (req, res) => {
-
-  const replays = db.prepare(`
-    SELECT r.id, r.player_id, r.score, r.accuracy, p.username
-    FROM replays r
-    JOIN players p ON p.id = r.player_id
-    WHERE r.match_id = ?
-  `).all(req.params.matchId);
-
-  res.json(replays);
-
+router.get("/match/:matchId", async (req, res) => {
+  try {
+    const replays = await db.all(`
+      SELECT r.id, r.player_id, r.score, r.accuracy, p.username
+      FROM replays r JOIN players p ON p.id = r.player_id WHERE r.match_id = ?
+    `, [req.params.matchId]);
+    res.json(replays);
+  } catch (err) {
+    res.status(500).json({ error: "Error cargando replays" });
+  }
 });
 
 module.exports = router;

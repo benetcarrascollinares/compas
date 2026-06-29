@@ -59,12 +59,6 @@ const clientPath = (() => {
   const fromCwd     = path.join(process.cwd(), "client");
   const fromApp     = "/app/client";
 
-  console.log("🔍 __dirname:", __dirname);
-  console.log("🔍 process.cwd():", process.cwd());
-  console.log("🔍 fromDirname:", fromDirname, "exists:", fs2.existsSync(fromDirname));
-  console.log("🔍 fromCwd:", fromCwd, "exists:", fs2.existsSync(fromCwd));
-  console.log("🔍 fromApp:", fromApp, "exists:", fs2.existsSync(fromApp));
-
   if (fs2.existsSync(path.join(fromDirname, "index.html"))) return fromDirname;
   if (fs2.existsSync(path.join(fromCwd,     "index.html"))) return fromCwd;
   if (fs2.existsSync(path.join(fromApp,     "index.html"))) return fromApp;
@@ -109,20 +103,18 @@ ADMIN RESET (solo con clave secreta)
 =================================
 */
 
-app.post("/api/admin/reset", (req, res) => {
+app.post("/api/admin/reset", async (req, res) => {
   const { secret } = req.body;
   if (secret !== process.env.ADMIN_SECRET) {
     return res.status(403).json({ error: "No autorizado" });
   }
 
   try {
-    db.exec(`
-      DELETE FROM unlockables;
-      DELETE FROM match_stats;
-      DELETE FROM matches;
-      DELETE FROM community_songs;
-      DELETE FROM players;
-    `);
+    await db.exec(`DELETE FROM unlockables`);
+    await db.exec(`DELETE FROM match_stats`);
+    await db.exec(`DELETE FROM matches`);
+    await db.exec(`DELETE FROM community_songs`);
+    await db.exec(`DELETE FROM players`);
     res.json({ ok: true, message: "DB reseteada correctamente" });
     console.log("🗑️ DB reseteada por admin");
   } catch (err) {
@@ -141,7 +133,7 @@ Verificar JWT en el handshake
 =================================
 */
 
-io.use((socket, next) => {
+io.use(async (socket, next) => {
 
   const token =
     socket.handshake.auth?.token;
@@ -155,30 +147,22 @@ io.use((socket, next) => {
   const payload = verifyToken(token);
 
   if (!payload) {
-    // Token inválido → rechazar conexión
-    return next(
-      new Error("Token inválido")
-    );
+    return next(new Error("Token inválido"));
   }
 
-  const player = findById(payload.id);
+  const player = await findById(payload.id);
 
   if (!player) {
-    return next(
-      new Error("Jugador no encontrado")
-    );
+    return next(new Error("Jugador no encontrado"));
   }
 
-  // Adjuntar datos del jugador al socket
   socket.player = {
     id:       player.id,
     username: player.username,
     elo:      player.elo
   };
 
-  console.log(
-    `🔑 Auth OK: ${player.username}`
-  );
+  console.log(`🔑 Auth OK: ${player.username}`);
 
   next();
 
@@ -206,7 +190,7 @@ function calcElo(playerElo, opponentElo, result) {
   );
 }
 
-function persistMatchResult({
+async function persistMatchResult({
   player1,
   player2,
   p1Data,
@@ -216,86 +200,49 @@ function persistMatchResult({
 
   if (!player1 || !player2) return {};
 
-  const isDraw =
-    p1Data.score === p2Data.score;
+  const isDraw = p1Data.score === p2Data.score;
+  const p1Won  = p1Data.score > p2Data.score;
 
-  const p1Won =
-    p1Data.score > p2Data.score;
+  const winnerId = isDraw ? null : p1Won ? player1.id : player2.id;
 
-  const winnerId = isDraw
-    ? null
-    : p1Won
-      ? player1.id
-      : player2.id;
-
-  saveMatch({
-    player1Id:  player1.id,
-    player2Id:  player2.id,
+  await saveMatch({
+    player1Id: player1.id,
+    player2Id: player2.id,
     winnerId,
     difficulty,
-    p1Stats:    p1Data,
-    p2Stats:    p2Data
+    p1Stats:   p1Data,
+    p2Stats:   p2Data
   });
 
   if (!isDraw) {
-
     const p1Result = p1Won ? 1 : 0;
     const p2Result = p1Won ? 0 : 1;
 
-    const newElo1 = calcElo(
-      player1.elo,
-      player2.elo,
-      p1Result
-    );
+    const newElo1 = calcElo(player1.elo, player2.elo, p1Result);
+    const newElo2 = calcElo(player2.elo, player1.elo, p2Result);
 
-    const newElo2 = calcElo(
-      player2.elo,
-      player1.elo,
-      p2Result
-    );
+    await updateElo(player1.id, newElo1);
+    await updateElo(player2.id, newElo2);
+    await updateWinLoss(player1.id, p1Won);
+    await updateWinLoss(player2.id, !p1Won);
 
-    updateElo(player1.id, newElo1);
-    updateElo(player2.id, newElo2);
-
-    updateWinLoss(player1.id, p1Won);
-    updateWinLoss(player2.id, !p1Won);
-
-    // Actualizar ELO en memoria para checkUnlocks
     player1.elo = newElo1;
     player2.elo = newElo2;
-    if (p1Won) player1.wins++;
-    else       player1.losses++;
-    if (!p1Won) player2.wins++;
-    else        player2.losses++;
+    if (p1Won) player1.wins++; else player1.losses++;
+    if (!p1Won) player2.wins++; else player2.losses++;
 
-    console.log(
-      `📊 ELO: ${player1.username} →${newElo1}` +
-      ` | ${player2.username} →${newElo2}`
-    );
-
+    console.log(`📊 ELO: ${player1.username} →${newElo1} | ${player2.username} →${newElo2}`);
   }
 
-  // Releer de DB para que checkUnlocks
-  // vea los valores ya actualizados
-  const updatedP1 =
-    player1 ? findById(player1.id) : null;
+  const updatedP1 = player1 ? await findById(player1.id) : null;
+  const updatedP2 = player2 ? await findById(player2.id) : null;
 
-  const updatedP2 =
-    player2 ? findById(player2.id) : null;
-
-  // Comprobar desbloqueos para ambos jugadores
   const p1Unlocks = updatedP1
-    ? checkUnlocks(
-        updatedP1,
-        { accuracy: p1Data.accuracy, maxCombo: p1Data.maxCombo }
-      )
+    ? await checkUnlocks(updatedP1, { accuracy: p1Data.accuracy, maxCombo: p1Data.maxCombo })
     : { newTitles: [], newSkins: [] };
 
   const p2Unlocks = updatedP2
-    ? checkUnlocks(
-        updatedP2,
-        { accuracy: p2Data.accuracy, maxCombo: p2Data.maxCombo }
-      )
+    ? await checkUnlocks(updatedP2, { accuracy: p2Data.accuracy, maxCombo: p2Data.maxCombo })
     : { newTitles: [], newSkins: [] };
 
   return { p1Unlocks, p2Unlocks };
@@ -416,8 +363,8 @@ io.on("connection", socket => {
 
     delete songVotes[room];
 
-    setTimeout(() => {
-      gameManager.startGame(io, room, chosenId, isCommunity);
+    setTimeout(async () => {
+      await gameManager.startGame(io, room, chosenId, isCommunity);
     }, 2000);
 
   });
@@ -559,7 +506,7 @@ io.on("connection", socket => {
   FIN DE PARTIDA
   */
 
-  socket.on("gameFinished", data => {
+  socket.on("gameFinished", async data => {
 
     const allRooms = [...socket.rooms].filter(r => r !== socket.id);
 
@@ -655,9 +602,9 @@ io.on("connection", socket => {
           if (champion) {
             const sp = socketPlayers[champion.socketId];
             if (sp) {
-              grantTournamentTitle(sp.id);
+              await grantTournamentTitle(sp.id);
               // Refrescar ELO actualizado de la DB
-              const freshChampion = findById(sp.id);
+              const freshChampion = await findById(sp.id);
               if (freshChampion) champion.elo = freshChampion.elo;
             }
           }
@@ -716,11 +663,11 @@ io.on("connection", socket => {
     const sp1 = socketPlayers[p1Id];
     const sp2 = socketPlayers[p2Id];
 
-    const freshP1 = sp1 ? findById(sp1.id) : null;
-    const freshP2 = sp2 ? findById(sp2.id) : null;
+    const freshP1 = sp1 ? await findById(sp1.id) : null;
+    const freshP2 = sp2 ? await findById(sp2.id) : null;
 
     const { p1Unlocks, p2Unlocks } =
-      persistMatchResult({
+      await persistMatchResult({
         player1:    freshP1,
         player2:    freshP2,
         p1Data:     p1,
@@ -729,8 +676,8 @@ io.on("connection", socket => {
       });
 
     // Emitir resultado a cada jugador
-    const freshP1AfterMatch = freshP1 ? findById(freshP1.id) : null;
-    const freshP2AfterMatch = freshP2 ? findById(freshP2.id) : null;
+    const freshP1AfterMatch = freshP1 ? await findById(freshP1.id) : null;
+    const freshP2AfterMatch = freshP2 ? await findById(freshP2.id) : null;
 
     io.to(p1Id).emit("gameFinished", {
       result:   r1,

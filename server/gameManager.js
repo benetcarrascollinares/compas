@@ -4,7 +4,7 @@ const { getSong: getCommunitySong } = require("./db/communitySongs");
 // Datos activos por sala (para espectadores)
 const activeRoomData = {};
 
-function startGame(io, roomId, songId, isCommunity = false) {
+async function startGame(io, roomId, songId, isCommunity = false) {
 
   const startAt = Date.now() + 5000;
 
@@ -13,7 +13,7 @@ function startGame(io, roomId, songId, isCommunity = false) {
   if (isCommunity && songId) {
 
     // Canción comunitaria
-    const cs = getCommunitySong(songId);
+    const cs = await getCommunitySong(songId);
 
     if (cs) {
       song = {

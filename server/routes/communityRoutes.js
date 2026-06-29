@@ -4,37 +4,18 @@ const path    = require("path");
 const fs      = require("fs");
 const router  = express.Router();
 
-const {
-  uploadSong,
-  listSongs,
-  getSong,
-  rateSong,
-  incrementPlays,
-  getPlayerRating
-} = require("../db/communitySongs");
-
+const { uploadSong, listSongs, getSong, rateSong, incrementPlays, getPlayerRating } = require("../db/communitySongs");
 const { verifyToken } = require("../auth/auth");
 const { findById }    = require("../db/players");
 const db              = require("../db/database");
 
-/*
-Carpeta de uploads
-*/
-const UPLOADS_DIR = path.join(__dirname, "../uploads");
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
-
-/*
-Límites globales
-*/
-const MAX_FILE_MB       = 10;
+const UPLOADS_DIR     = path.join(__dirname, "../uploads");
+const MAX_FILE_MB     = 10;
 const MAX_SONGS_PER_USER = 3;
 const MAX_SONGS_TOTAL    = 50;
 
-/*
-Multer — solo MP3, máx 5MB
-*/
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOADS_DIR),
   filename:    (req, file, cb) => {
@@ -46,119 +27,77 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (
-      file.mimetype === "audio/mpeg" ||
-      file.mimetype === "audio/mp3"  ||
-      file.originalname.endsWith(".mp3")
-    ) {
+    if (file.mimetype === "audio/mpeg" || file.mimetype === "audio/mp3" || file.originalname.endsWith(".mp3"))
       cb(null, true);
-    } else {
-      cb(new Error("Solo se aceptan archivos MP3"));
-    }
+    else cb(new Error("Solo se aceptan archivos MP3"));
   }
 });
 
-/*
-Auth middleware
-*/
-function auth(req, res, next) {
+async function auth(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ error: "No autorizado" });
   const payload = verifyToken(token);
   if (!payload) return res.status(401).json({ error: "Token inválido" });
-  req.player = findById(payload.id);
-  if (!req.player) return res.status(401).json({ error: "Jugador no encontrado" });
+  const player = await findById(payload.id);
+  if (!player) return res.status(401).json({ error: "Jugador no encontrado" });
+  req.player = player;
   next();
 }
 
-/*
-=================================
-GET /community/songs
-=================================
-*/
-router.get("/songs", (req, res) => {
-  res.json(listSongs({ minRatings: 0 }));
+router.get("/songs", async (req, res) => {
+  try {
+    res.json(await listSongs({ minRatings: 0 }));
+  } catch (err) {
+    console.error("Error en /community/songs:", err);
+    res.status(500).json({ error: "Error cargando canciones" });
+  }
 });
 
-/*
-=================================
-GET /community/songs/:songId/beatmap
-=================================
-*/
-router.get("/songs/:songId/beatmap", (req, res) => {
-  const song = getSong(req.params.songId);
-  if (!song) return res.status(404).json({ error: "Canción no encontrada" });
-  incrementPlays(req.params.songId);
-  res.json(song);
+router.get("/songs/:songId/beatmap", async (req, res) => {
+  try {
+    const song = await getSong(req.params.songId);
+    if (!song) return res.status(404).json({ error: "Canción no encontrada" });
+    await incrementPlays(req.params.songId);
+    res.json(song);
+  } catch (err) {
+    res.status(500).json({ error: "Error cargando beatmap" });
+  }
 });
 
-/*
-=================================
-POST /community/songs
-Sube beatmap + MP3 (multipart/form-data)
-Fields: name, artist, stars, duration, beatmap (JSON string)
-File:   audio (MP3)
-=================================
-*/
-router.post(
-  "/songs",
-  auth,
-  upload.single("audio"),
-  (req, res) => {
+router.post("/songs", auth, upload.single("audio"), async (req, res) => {
+  const { name, artist, stars, duration, beatmap, difficulty } = req.body;
 
-    const { name, artist, stars, duration, beatmap } = req.body;
+  if (!name || !beatmap || !duration) {
+    if (req.file) fs.unlinkSync(req.file.path);
+    return res.status(400).json({ error: "Faltan campos" });
+  }
 
-    if (!name || !beatmap || !duration) {
+  try {
+    const total = await db.get("SELECT COUNT(*) AS n FROM community_songs");
+    if (parseInt(total.n) >= MAX_SONGS_TOTAL) {
       if (req.file) fs.unlinkSync(req.file.path);
-      return res.status(400).json({ error: "Faltan campos" });
+      return res.status(400).json({ error: `Límite de ${MAX_SONGS_TOTAL} canciones alcanzado` });
     }
 
-    // Límite total
-    const total = db.prepare(
-      "SELECT COUNT(*) AS n FROM community_songs"
-    ).get();
-    if (total.n >= MAX_SONGS_TOTAL) {
+    const userCount = await db.get("SELECT COUNT(*) AS n FROM community_songs WHERE creator_id = ?", [req.player.id]);
+    if (parseInt(userCount.n) >= MAX_SONGS_PER_USER) {
       if (req.file) fs.unlinkSync(req.file.path);
-      return res.status(400).json({
-        error: "Límite total de canciones alcanzado"
-      });
-    }
-
-    // Límite por usuario
-    const userCount = db.prepare(
-      "SELECT COUNT(*) AS n FROM community_songs WHERE creator_id = ?"
-    ).get(req.player.id);
-    if (userCount.n >= MAX_SONGS_PER_USER) {
-      if (req.file) fs.unlinkSync(req.file.path);
-      return res.status(400).json({
-        error: "Límite de canciones por usuario alcanzado"
-      });
+      return res.status(400).json({ error: `Máximo ${MAX_SONGS_PER_USER} canciones por usuario` });
     }
 
     let parsedBeatmap;
-    try {
-      parsedBeatmap = JSON.parse(beatmap);
-    } catch {
-      if (req.file) fs.unlinkSync(req.file.path);
-      return res.status(400).json({ error: "Beatmap inválido" });
-    }
+    try { parsedBeatmap = JSON.parse(beatmap); }
+    catch { if (req.file) fs.unlinkSync(req.file.path); return res.status(400).json({ error: "Beatmap inválido" }); }
 
-    // URL del audio (si se subió)
-    const audioUrl = req.file
-      ? `/uploads/${req.file.filename}`
-      : null;
+    const audioUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const result = uploadSong({
-      name,
-      artist:      artist || req.player.username,
-      stars:       parseInt(stars) || 3,
-      duration:    parseInt(duration),
-      beatmap:     parsedBeatmap,
-      audioUrl,
-      creatorId:   req.player.id,
-      creatorName: req.player.username
+    const result = await uploadSong({
+      name, artist: artist || req.player.username,
+      stars: parseInt(stars) || 3, duration: parseInt(duration),
+      beatmap: parsedBeatmap, audioUrl, difficulty: difficulty || "normal",
+      creatorId: req.player.id, creatorName: req.player.username
     });
 
     if (!result.ok) {
@@ -167,42 +106,36 @@ router.post(
     }
 
     res.status(201).json({ songId: result.songId, audioUrl });
-
+  } catch (err) {
+    if (req.file) fs.unlinkSync(req.file.path);
+    res.status(500).json({ error: "Error subiendo canción" });
   }
-);
+});
 
-/*
-=================================
-POST /community/songs/:songId/rate
-=================================
-*/
-router.post("/songs/:songId/rate", auth, (req, res) => {
+router.post("/songs/:songId/rate", auth, async (req, res) => {
   const rating = parseInt(req.body.rating);
-  if (!rating || rating < 1 || rating > 5) {
-    return res.status(400).json({ error: "Rating inválido (1-5)" });
+  if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: "Rating inválido (1-5)" });
+  try {
+    const result = await rateSong(req.params.songId, req.player.id, rating);
+    if (!result.ok) return res.status(400).json({ error: result.error });
+    res.json({ avg: result.avg, count: result.count });
+  } catch (err) {
+    res.status(500).json({ error: "Error valorando canción" });
   }
-  const result = rateSong(req.params.songId, req.player.id, rating);
-  if (!result.ok) return res.status(400).json({ error: result.error });
-  res.json({ avg: result.avg, count: result.count });
 });
 
-/*
-=================================
-GET /community/songs/:songId/myrating
-=================================
-*/
-router.get("/songs/:songId/myrating", auth, (req, res) => {
-  const rating = getPlayerRating(req.params.songId, req.player.id);
-  res.json({ rating });
+router.get("/songs/:songId/myrating", auth, async (req, res) => {
+  try {
+    const rating = await getPlayerRating(req.params.songId, req.player.id);
+    res.json({ rating });
+  } catch (err) {
+    res.status(500).json({ error: "Error obteniendo valoración" });
+  }
 });
 
-// Manejo de errores de multer (ej: archivo demasiado grande)
 router.use((err, req, res, next) => {
-  if (err.code === "LIMIT_FILE_SIZE") {
-    return res.status(400).json({
-      error: `El archivo es demasiado grande. Máximo ${MAX_FILE_MB}MB`
-    });
-  }
+  if (err.code === "LIMIT_FILE_SIZE")
+    return res.status(400).json({ error: `El archivo es demasiado grande. Máximo ${MAX_FILE_MB}MB` });
   next(err);
 });
 

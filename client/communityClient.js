@@ -179,8 +179,17 @@ export function showRatingModal(songId, songName, onRate) {
       });
 
       const result = await rateSong(songId, selected);
-      if (onRate) onRate(result);
 
+      if (result?.error) {
+        const errorEl = document.createElement("div");
+        errorEl.style.cssText = "color:#f44336;font-size:13px;margin-top:8px;text-align:center";
+        errorEl.textContent = result.error;
+        document.getElementById("ratingModalInner")?.appendChild(errorEl);
+        setTimeout(() => modal.remove(), 2000);
+        return;
+      }
+
+      if (onRate) onRate(result);
       setTimeout(() => modal.remove(), 600);
 
     });

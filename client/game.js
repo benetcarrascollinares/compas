@@ -808,11 +808,20 @@ async function startReplayMode() {
   const diff   = currentDifficulty;
 
   try {
-    const mod = await import(
-      `./songs/${songId}_${diff}.js?v=${Date.now()}`
-    );
-    setBeatmap([...mod.beatmap]);
-    songDuration = mod.duration || 30000;
+    if (isCommunity) {
+      // Canción comunitaria — cargar desde servidor
+      const communityData = await fetchCommunityBeatmap(songId);
+      if (!communityData) throw new Error("No se pudo cargar la canción");
+      setBeatmap([...communityData.beatmap]);
+      songDuration = communityData.duration || 30000;
+    } else {
+      // Canción oficial — cargar desde archivo local
+      const mod = await import(
+        `./songs/${songId}_${diff}.js?v=${Date.now()}`
+      );
+      setBeatmap([...mod.beatmap]);
+      songDuration = mod.duration || 30000;
+    }
   } catch (err) {
     alert("No se pudo cargar el beatmap para el replay");
     replayMode = false;
