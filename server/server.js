@@ -74,13 +74,6 @@ console.log("📁 Sirviendo cliente desde:", clientPath);
 
 app.use(express.static(clientPath));
 
-// Fallback — todas las rutas no-API sirven index.html
-app.get("*", (req, res) => {
-  if (!req.path.startsWith("/api") && !req.path.startsWith("/uploads")) {
-    res.sendFile(path.join(clientPath, "index.html"));
-  }
-});
-
 // Archivos de audio subidos por la comunidad
 app.use(
   "/uploads",
@@ -1343,6 +1336,13 @@ function tryCreateMatch() {
 }
 
 setInterval(tryCreateMatch, 3000);
+
+// Fallback SPA — debe ir DESPUÉS de todas las rutas API
+app.get("*", (req, res) => {
+  if (!req.path.startsWith("/api") && !req.path.startsWith("/uploads")) {
+    res.sendFile(path.join(clientPath, "index.html"));
+  }
+});
 
 server.listen(PORT, () => {
   console.log(
