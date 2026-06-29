@@ -1,7 +1,7 @@
 import { socket } from "./socket.js";
 import { fetchCommunitySongs } from "./communityClient.js";
 
-const API = "http://localhost:3000/api";
+const API = `${window.location.origin}/api`;
 
 let selectedSongId   = null;
 let selectedSongType = "official"; // "official" | "community"
@@ -133,19 +133,11 @@ function selectSong(id, emitVote = true, type = "official") {
       diffSelect.disabled = true;
       diffSelect.style.opacity = "0.5";
     }
-    if (diffWrapper) {
-      const label = diffWrapper.querySelector("label");
-      if (label) label.textContent = `🎯 Dificultad: ${diff}`;
-    }
   } else {
     // Canción oficial — dificultad libre
     if (diffSelect) {
       diffSelect.disabled      = false;
       diffSelect.style.opacity = "";
-    }
-    if (diffWrapper) {
-      const label = diffWrapper.querySelector("label");
-      if (label) label.textContent = "🎯 Dificultad";
     }
   }
 
