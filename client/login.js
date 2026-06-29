@@ -6,6 +6,8 @@ import {
   isLoggedIn
 } from "./clientAuth.js";
 
+import { socket } from "./socket.js";
+
 import {
   getTitleLabel
 } from "./titles.js";
@@ -140,6 +142,13 @@ if (authPanel) {
       const data = mode === "login"
         ? await login(username, password)
         : await register(username, password);
+
+      // Reconectar socket con el nuevo token
+      // para que el servidor autentique al jugador
+      if (socket.connected) {
+        socket.auth = { token: data.token };
+        socket.disconnect().connect();
+      }
 
       showGame(data.user);
 
