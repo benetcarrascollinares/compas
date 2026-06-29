@@ -23,6 +23,7 @@ https://benecci.itch.io/compas
 - 📊 Rankings
 - 🛠️ Beatmap editor
 - 🎶 Community-created songs
+- 👁️ Spectator mode
 
 
 ## 🧱 Tech stack
