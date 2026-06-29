@@ -52,11 +52,19 @@ app.use(cors());
 app.use(express.json());
 
 // Archivos estáticos del cliente
+const clientPath = path.join(__dirname, "../client");
+console.log("📁 Sirviendo cliente desde:", clientPath);
+
 app.use(
-  express.static(
-    path.join(__dirname, "../client")
-  )
+  express.static(clientPath)
 );
+
+// Fallback — todas las rutas no-API sirven index.html
+app.get("*", (req, res) => {
+  if (!req.path.startsWith("/api") && !req.path.startsWith("/uploads")) {
+    res.sendFile(path.join(clientPath, "index.html"));
+  }
+});
 
 // Archivos de audio subidos por la comunidad
 app.use(
