@@ -1,4 +1,4 @@
-const API = "http://localhost:3000/api/community";
+const API = `${window.location.origin}/api/community`;
 
 /*
 =================================

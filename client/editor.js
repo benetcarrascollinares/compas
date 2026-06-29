@@ -1,6 +1,6 @@
 /*
 =================================
-BEATMAP EDITOR — Compás
+BEATMAP EDITOR — Rhythm Battle
 =================================
 */
 
@@ -517,7 +517,7 @@ btnExport?.addEventListener("click", async () => {
     }
 
     const res = await fetch(
-      "http://localhost:3000/api/community/songs",
+      `${window.location.origin}/api/community/songs`,
       {
         method:  "POST",
         headers: { "Authorization": `Bearer ${token}` },

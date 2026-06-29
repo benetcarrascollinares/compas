@@ -20,7 +20,7 @@ function startGame(io, roomId, songId, isCommunity = false) {
         id:        cs.song_id,
         name:      cs.name,
         audio:     cs.audio_url
-          ? `http://localhost:3000${cs.audio_url}`
+          ? cs.audio_url  // URL relativa — el cliente usa window.location.origin
           : null,
         duration:  cs.duration,
         community: true

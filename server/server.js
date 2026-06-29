@@ -3,6 +3,13 @@ const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
 const cors = require("cors");
+const fs   = require("fs");
+
+// Crear directorio uploads si no existe (Railway)
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 const rooms = require("./rooms");
 const gameManager = require("./gameManager");
@@ -33,7 +40,7 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 /*
 =================================
@@ -47,7 +54,7 @@ app.use(express.json());
 // Archivos estáticos del cliente
 app.use(
   express.static(
-    path.join(__dirname, "public")
+    path.join(__dirname, "../client")
   )
 );
 
@@ -1139,7 +1146,7 @@ io.on("connection", socket => {
           id:        cs.song_id,
           name:      cs.name,
           audio:     cs.audio_url
-            ? `http://localhost:3000${cs.audio_url}`
+            ? cs.audio_url  // URL relativa
             : null,
           duration:  cs.duration,
           community: true

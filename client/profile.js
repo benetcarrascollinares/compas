@@ -12,7 +12,7 @@ import {
   getTitleLabel
 } from "./titles.js";
 
-const API = "http://localhost:3000/api";
+const API = `${window.location.origin}/api`;
 
 /*
 =================================

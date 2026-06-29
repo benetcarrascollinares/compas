@@ -942,7 +942,7 @@ async function saveReplay(matchId) {
   if (!token) return;
 
   try {
-    await fetch("http://localhost:3000/api/replays", {
+    await fetch(`${window.location.origin}/api/replays`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

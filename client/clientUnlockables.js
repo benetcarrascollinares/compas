@@ -1,7 +1,7 @@
 import { refreshUserBar } from "./login.js";
 import { getTitleLabel, TITLE_LABELS } from "./titles.js";
 
-const API = "http://localhost:3000/api";
+const API = `${window.location.origin}/api`;
 
 /*
 =================================
