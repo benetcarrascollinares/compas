@@ -1,6 +1,16 @@
 {
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "NIXPACKS",
+    "nixpacksPlan": {
+      "phases": {
+        "setup": {
+          "nixPkgs": ["nodejs_18", "python3", "pkg-config"]
+        },
+        "install": {
+          "cmds": ["npm install"]
+        }
+      }
+    }
   },
   "deploy": {
     "startCommand": "node server/server.js",
