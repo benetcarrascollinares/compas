@@ -266,7 +266,7 @@ function renderSelector() {
           </div>
         `;
       }).join("")
-    : `<div class="songs-col-empty">Sé el primero<br>en crear un beatmap</div>`;
+    : `<div class="songs-col-empty">🎹 ¡Sé el primero!<br>Crea un beatmap<br>desde el <a href="editor.html" style="color:#ffcc00;text-decoration:underline">Editor</a></div>`;
 
   container.innerHTML = `
     <div class="songs-col">
