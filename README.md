@@ -1,12 +1,9 @@
-# 🎵 Rhythm Battle
+# 🎵 Compás
 
 A multiplayer rhythm game where players compete online, create beatmaps and share songs with the community.
 
 🌐 Play online:
 https://compas-production-a237.up.railway.app/
-
-🎮 Itch.io:
-https://benecci.itch.io/compas
 
 
 ## ✨ Features
@@ -114,7 +111,8 @@ Feel free to open an issue or submit a pull request.
 
 ## 📸 Screenshots
 
-<img width="814" height="617" alt="compas" src="https://github.com/user-attachments/assets/94185528-f8c0-433f-a77c-2dab992ca8ae" />
+<img width="682" height="682" alt="Compás" src="https://github.com/user-attachments/assets/b7ad4bd8-bbec-42b5-8cf7-3fa262a12e9c" />
+
 
 
 ## 📜 License
