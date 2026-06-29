@@ -18,6 +18,7 @@ const communityRoutes = require("./routes/communityRoutes");
 const replayRoutes    = require("./routes/replayRoutes");
 const songCatalog    = require("./songCatalog");
 const { getSong: getCommunitySong } = require("./db/communitySongs");
+const db = require("./db/database");
 const tm = require("./tournamentManager");
 
 const { verifyToken } = require("./auth/auth");
@@ -104,9 +105,30 @@ app.get("/api/songs", (req, res) => {
 
 /*
 =================================
-GET /api/queue  (debug)
+ADMIN RESET (solo con clave secreta)
 =================================
 */
+
+app.post("/api/admin/reset", (req, res) => {
+  const { secret } = req.body;
+  if (secret !== process.env.ADMIN_SECRET) {
+    return res.status(403).json({ error: "No autorizado" });
+  }
+
+  try {
+    db.exec(`
+      DELETE FROM unlockables;
+      DELETE FROM match_stats;
+      DELETE FROM matches;
+      DELETE FROM community_songs;
+      DELETE FROM players;
+    `);
+    res.json({ ok: true, message: "DB reseteada correctamente" });
+    console.log("🗑️ DB reseteada por admin");
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.get("/api/queue", (req, res) => {
   res.json(rooms.getQueueStats());
