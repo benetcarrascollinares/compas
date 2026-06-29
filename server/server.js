@@ -52,14 +52,22 @@ app.use(cors());
 app.use(express.json());
 
 // Archivos estáticos del cliente
-// Buscar el cliente relativo al directorio de trabajo o al script
 const clientPath = (() => {
+  const fs2 = require("fs");
   const fromDirname = path.join(__dirname, "../client");
   const fromCwd     = path.join(process.cwd(), "client");
-  const fs2         = require("fs");
+  const fromApp     = "/app/client";
+
+  console.log("🔍 __dirname:", __dirname);
+  console.log("🔍 process.cwd():", process.cwd());
+  console.log("🔍 fromDirname:", fromDirname, "exists:", fs2.existsSync(fromDirname));
+  console.log("🔍 fromCwd:", fromCwd, "exists:", fs2.existsSync(fromCwd));
+  console.log("🔍 fromApp:", fromApp, "exists:", fs2.existsSync(fromApp));
+
   if (fs2.existsSync(path.join(fromDirname, "index.html"))) return fromDirname;
   if (fs2.existsSync(path.join(fromCwd,     "index.html"))) return fromCwd;
-  return fromDirname; // fallback
+  if (fs2.existsSync(path.join(fromApp,     "index.html"))) return fromApp;
+  return fromDirname;
 })();
 
 console.log("📁 Sirviendo cliente desde:", clientPath);
