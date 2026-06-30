@@ -276,6 +276,12 @@ io.on("connection", socket => {
       : "(invitado)"
   );
 
+  // Emitir contador de jugadores online a todos (con pequeño delay
+  // para asegurar que clientsCount ya refleja la nueva conexión)
+  setTimeout(() => {
+    io.emit("onlineCount", io.engine.clientsCount);
+  }, 50);
+
   if (socket.player) {
     socketPlayers[socket.id] =
       socket.player;
@@ -1183,6 +1189,11 @@ io.on("connection", socket => {
     tm.leaveQuickQueue(socket); // limpiar cola rápida si estaba esperando
 
     console.log("Desconectado:", socket.id);
+
+    // Emitir contador actualizado tras la desconexión
+    setTimeout(() => {
+      io.emit("onlineCount", io.engine.clientsCount);
+    }, 100);
   });
 
 });
@@ -1305,6 +1316,12 @@ function tryCreateMatch() {
 }
 
 setInterval(tryCreateMatch, 3000);
+
+// Emitir contador de jugadores online periódicamente
+// (corrige cualquier desincronización por reconexiones)
+setInterval(() => {
+  io.emit("onlineCount", io.engine.clientsCount);
+}, 5000);
 
 // Fallback SPA — debe ir DESPUÉS de todas las rutas API
 app.get("*", (req, res) => {

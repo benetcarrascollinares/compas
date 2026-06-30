@@ -451,6 +451,13 @@ socket.on(
   }
 );
 
+socket.on("onlineCount", (count) => {
+  const el = document.getElementById("onlineCount");
+  if (el) {
+    el.textContent = `🟢 ${count} jugador${count === 1 ? "" : "es"} online`;
+  }
+});
+
 socket.on(
   "waiting",
   ()=>{
