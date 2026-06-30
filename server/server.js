@@ -302,6 +302,10 @@ io.on("connection", socket => {
 
   });
 
+  socket.on("leaveQueue", () => {
+    rooms.removePlayer(socket.id);
+  });
+
   /*
   VOTACIÓN DE CANCIÓN
   */

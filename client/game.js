@@ -479,15 +479,30 @@ socket.on(
         setStatus("⏳ Buscando cualquier rival...");
       }
 
+      // Tras 20s sin encontrar rival, sugerir práctica
+      if (secs === 20) {
+        const suggestion = document.getElementById("noRivalSuggestion");
+        if (suggestion) suggestion.style.display = "block";
+      }
+
     }, 5000);
 
     // Limpiar timer cuando llegue roomCreated
     socket.once("roomCreated", () => {
       clearInterval(waitTimer);
+      const suggestion = document.getElementById("noRivalSuggestion");
+      if (suggestion) suggestion.style.display = "none";
     });
 
   }
 );
+
+document.getElementById("suggestPracticeBtn")?.addEventListener("click", () => {
+  // Salir de la cola y entrar en práctica
+  socket.emit("leaveQueue");
+  document.getElementById("noRivalSuggestion").style.display = "none";
+  document.getElementById("practiceButton")?.click();
+});
 
 socket.on(
   "roomCreated",
